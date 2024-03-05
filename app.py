@@ -13,12 +13,20 @@ st.subheader(f":bookmark_tabs: Relatório dos períodos de {since_formated}, at�
 #Colocar um botão e usar sentença if para ele
 if st.button("Gerar"):
     posts_df = df_face_report(since_formated, until_formated)
-    col1,col2,col3 = st.columns(3)
-    # ,col4,col5,col6,col7,col8,col9,col10,col11,col12
+    col1,col2,col3,col4,col5,col6, = st.columns(6)
+    col7,col8,col9,col10,col11,col12 = st.columns(6)
     col1.metric(label="Comentários", value=str(posts_df["comments"].sum()))
     col2.metric(label="Compartilhamentos", value=str(posts_df["shares"].sum()))
     col3.metric(label="Alcance", value=str(posts_df["reach"].sum()))
-
+    col4.metric(label="Cliques Únicos", value=str(posts_df["unique_clicks_on_post"].sum()))
+    col5.metric(label="Usuários Engajados", value=str(posts_df["engaged_users"].sum()))
+    col6.metric(label="Seguidores Engajados", value=str(posts_df["engaged_fans"].sum()))
+    col7.metric(label="react - haha", value=str(posts_df["haha"].sum()))
+    col8.metric(label="react - wow", value=str(posts_df["wow"].sum()))
+    col9.metric(label="react - like", value=str(posts_df["like"].sum()))
+    col10.metric(label="react - love", value=str(posts_df["love"].sum()))
+    col11.metric(label="react - sorry", value=str(posts_df["sorry"].sum()))
+    col12.metric(label="react - sorry", value=str(posts_df["anger"].sum()))
 #Tabela
     st.data_editor(posts_df,
                 column_config={
