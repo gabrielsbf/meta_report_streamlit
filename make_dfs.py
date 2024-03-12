@@ -12,7 +12,7 @@ def df_face_report(since, until):
     df["negative_reactions"] = df["anger"] + df['sorry']
     df['anger'] = df["anger"] * -1
     df['sorry'] = df["sorry"] * -1
-
+    df["engagment"] = df["shares"] + df["comments"] + df["positive_reactions"] + df["negative_reactions"]
     df["created_time"] = pd.to_datetime(df["created_time"])
 
     return df
