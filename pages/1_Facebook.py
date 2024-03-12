@@ -2,17 +2,28 @@ import streamlit as st
 import datetime
 import altair as alt
 from make_dfs import *
+from fpdf import FPDF
+import base64
 
-st.set_page_config("Hub - Analytics Movementes", layout='wide')
-st.header("Relatório Facebook")
-since, until = st.columns(2)
-since = since.date_input("Selecione a data do início da pesquisa", on_change=None)
-until = until.date_input("Selecione a data do final da pesquisa", on_change=None)
-since_formated = since.strftime("%d/%m/%Y")
-until_formated = until.strftime("%d/%m/%Y")
-st.subheader(f":bookmark_tabs: Relatório dos períodos de {since_formated}, até {until_formated}", divider='orange')
+def header_section():
+    st.set_page_config("Hub - Analytics Movementes", layout='wide')
+    st.header("Relatório Facebook")
+
+def date_input():
+    since, until = st.columns(2)
+    since = since.date_input("Selecione a data do início da pesquisa", on_change=None)
+    until = until.date_input("Selecione a data do final da pesquisa", on_change=None)
+    since_formated = since.strftime("%d/%m/%Y")
+    until_formated = until.strftime("%d/%m/%Y")
+    st.subheader(f":bookmark_tabs: Relatório dos períodos de {since_formated}, até {until_formated}", divider='orange')
+    return [since_formated, until_formated]
+
+header = header_section()
+datas = date_input()
 #Colocar um botão e usar sentença if para ele
 if st.button("Gerar"):
+    since_formated = datas[0]
+    until_formated = datas[1]
     posts_df = df_face_report(since_formated, until_formated)
     col1,col2,col3,col4,col5,col6, = st.columns(6)
 
@@ -31,15 +42,20 @@ if st.button("Gerar"):
     col10.metric(label="react - love", value=str(posts_df["love"].sum()))
     col11.metric(label="react - sorry", value=str(posts_df["sorry"].sum()))
     col12.metric(label="react - anger", value=str(posts_df["anger"].sum() * -1))
-    reactions = posts_df[['like','haha','love', 'sorry', 'wow', 'anger', 'created_time']].copy()
-    reactions['created_time'] = reactions['created_time'].dt.strftime('%d/%m/%Y')
-    st.bar_chart(reactions, x='created_time', use_container_width=True)
+    posts_df["time_parsed"] = posts_df["created_time"].dt.strftime("%d/%m/%Y")
+    st.bar_chart(posts_df, x='time_parsed', y=['haha','wow', 'like', 'love', 'sorry', 'anger'])
+    col13, col14 = st.columns(2)
 
-
-    table = posts_df.drop(columns=['haha','like','love', 'wow', 'anger', 'sorry'])
+    df_ag = posts_df.drop(columns=['created_time']).groupby(['time_parsed']).sum()
+    df_ag.reset_index(names=['time_parsed'],inplace=True,col_level=0)
+    # print(df_ag)
+    # print(df_ag["love"])
+    col13.line_chart(df_ag,x='time_parsed', y='reach')
+    col14.line_chart(df_ag,x='time_parsed', y= 'engagment')
 
 #Tabela
-    st.data_editor(table,
+    table = posts_df.drop(columns=['haha','like','love', 'wow', 'anger', 'sorry', "engaged_fans", "engaged_users"])
+    table_st = st.data_editor(table,
                 column_config={
                     "created_time" : st.column_config.DatetimeColumn(
                         "data",
@@ -67,14 +83,13 @@ if st.button("Gerar"):
                     "negative_reactions": st.column_config.NumberColumn(
                         "reac. negat.", format="%d"
                     ),
-
-                        "unique_clicks_on_post": st.column_config.NumberColumn(
-                        "cliques un.", format="%d"
+                    "unique_clicks_on_post": st.column_config.NumberColumn(
+                    "cliques un.", format="%d"
                     ),
-                    "engaged_users": st.column_config.NumberColumn(
-                        "us. engaj.", format="%d"
-                    ),
-                    "engaged_fans": st.column_config.NumberColumn(
-                        "seg. engaj.", format="%d"
+                    "engagment": st.column_config.NumberColumn(
+                        "engajamento", format="%d",help='soma do total de compartilhamentos, comentários e reações, tanto positivas quanto negativas'
                     )
-                })
+                },hide_index=True, column_order=["created_time","permalink_url","shares", "comments","reach",
+                                                 "positive_reactions","negative_reactions","unique_clicks_on_post", "engagment"],
+                use_container_width=True, height=len(posts_df) * 38)
+
